@@ -1,68 +1,86 @@
+import { StyleSheet, ImageBackground, SafeAreaView } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import { StyleSheet, View, FlatList, Button } from "react-native";
-import GoalItem from "./components/GoalItem";
-import GoalInput from "./components/GoalInput";
+import { useFonts } from "expo-font";
+import AppLoading from "expo-app-loading";
 import { StatusBar } from "expo-status-bar";
+import StartGameScreen from "./screens/StartGameScreen";
+import GameScreen from "./screens/GameScreen";
+import GameOverScreen from "./screens/GameOverScreen";
+import Colors from "./constants/colors";
 
 export default function App() {
-  const [courseGoals, setCourseGoals] = useState([]);
-  const [modalIsVisible, setModalIsVisible] = useState(false);
+  const [userNumber, setUserNumber] = useState(null);
+  const [gameIsOver, setGameIsOver] = useState(false);
+  const [guessRounds, setGuessRounds] = useState(0);
 
-  function addGoalHandler(enteredGoalText) {
-    setCourseGoals((currentCourseGoals) => [
-      ...currentCourseGoals,
-      { id: Math.random().toString(), text: enteredGoalText },
-    ]);
-    setModalIsVisible(false);
+  const [fontsLoaded] = useFonts({
+    "open-sans": require("./assets/fonts/OpenSans-Regular.ttf"),
+    "open-sans-bold": require("./assets/fonts/OpenSans-Bold.ttf"),
+  });
+
+  if (!fontsLoaded) {
+    return <AppLoading />;
   }
 
-  function deleteGoalHandler(id) {
-    setCourseGoals((currentCourseGoals) => {
-      return currentCourseGoals.filter((goal) => goal.id !== id);
-    });
+  function pickedNumberHandler(pickedNumber) {
+    setUserNumber(pickedNumber);
+  }
+
+  function gameOverHandler(numberOfRounds) {
+    setGameIsOver(true);
+    setGuessRounds(numberOfRounds);
+  }
+
+  function startNewGameHandler() {
+    setUserNumber(null);
+    setGameIsOver(false);
+    setGuessRounds(0);
+  }
+
+  let screen = <StartGameScreen onPickNumber={pickedNumberHandler} />;
+
+  if (userNumber) {
+    screen = (
+      <GameScreen onGameOver={gameOverHandler} userNumber={userNumber} />
+    );
+  }
+
+  if (gameIsOver) {
+    screen = (
+      <GameOverScreen
+        userNumber={userNumber}
+        guessRounds={guessRounds}
+        onStartNewGame={startNewGameHandler}
+      />
+    );
   }
 
   return (
     <>
       <StatusBar style="light" />
-      <View style={styles.appContainer}>
-        <Button
-          title="Add New Goal"
-          color="#9267ca"
-          onPress={() => setModalIsVisible(true)}
-        />
-        <GoalInput
-          onAddGoal={addGoalHandler}
-          visible={modalIsVisible}
-          onCancel={() => setModalIsVisible(false)}
-        />
-        <View style={styles.goalsContainer}>
-          <FlatList
-            data={courseGoals}
-            renderItem={(itemData) => (
-              <GoalItem
-                id={itemData.item.id}
-                text={itemData.item.text}
-                onDeleteGoal={deleteGoalHandler}
-              />
-            )}
-            keyExtractor={(item) => {
-              return item.id;
-            }}
-          />
-        </View>
-      </View>
+      <LinearGradient
+        style={styles.container}
+        colors={[Colors.primary700, Colors.accent500]}
+      >
+        <ImageBackground
+          source={require("./assets/images/background.png")}
+          resizeMode="cover"
+          style={styles.container}
+          imageStyle={styles.image}
+        >
+          <SafeAreaView style={styles.container}>{screen}</SafeAreaView>
+        </ImageBackground>
+      </LinearGradient>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  appContainer: {
+  container: {
     flex: 1,
-    paddingTop: 50,
-    paddingHorizontal: 16,
   },
-  goalsContainer: {
-    flex: 5,
+  image: {
+    opacity: 0.15,
   },
 });
